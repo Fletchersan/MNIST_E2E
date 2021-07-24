@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@tensorflow/tfjs": "^3.8.0",
     "p5js": "^1.2.17"
   }
 }

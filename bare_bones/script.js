@@ -22,8 +22,6 @@
 // const { load } = require("send/node_modules/@types/mime");
 
 let pen;
-// var marks = [];
-let buttonErase;
 
 class Marker {
 
@@ -58,10 +56,11 @@ class Marker {
 }
 
 
-
+let myCanvas;
 function setup() {
+  let csize = 280
   pen = new Marker(mouseX, mouseY, 12, 0);
-  let myCanvas = createCanvas(560, 560);
+  myCanvas = createCanvas(csize, csize);
   pixelDensity(1);
   myCanvas.parent('canvas');
   buttonErase = createButton('Erase');
@@ -77,20 +76,6 @@ function clearBG() {
 }
 
 
-function predict(){
-  loadPixels();
-  colored = pixels;
-  grayScale = [];
-  for(let x = 0; x<height; x++){
-    grayScale[x] = new Array(width)
-    for(let y = 0; y<width; y++) {
-      var index = (x + y*width)*4;
-      grayScale[x][y] = (pixels[index] + pixels[index+1] + pixels[index+2] + pixels[index+3])/4
-    }
-  }
-  console.log(height, width);
-  console.log(grayScale)
-}
 
 function draw(){
   background(0);
@@ -107,6 +92,80 @@ function draw(){
   }
   pen.markings();
   pen.displayMarkings();
-  // ellipse(mouseX, mouseY, 80, 80)
 }
 
+
+
+
+function predict(){
+  // grayScale = getPooledGrayScaleArray();
+  // console.log('we made it')
+  // console.log(grayScale.length, grayScale[0].length);
+  console.log('in predict')
+  // let img = createImage(height, width)
+  // img.pixels = pixels;
+  // saveCanvas(myCanvas,'img')
+
+  
+  // save(myCanvas, '/home/fletcher/ComputerScience/dev/MNIST_E2E/bare_bones/xyz.png')
+  // setup();
+
+  grayScale = tf.tensor2d(getHighDensityGrayScaleArray());
+  print(grayScale.print())
+  // console.log(img)
+}
+
+function getPooledGrayScaleArray(){
+  hdgs = getHighDensityGrayScaleArray();
+  console.log('hdgs dims')
+  console.log(hdgs.length, hdgs[0].length)
+  gs = []
+  offset = 28
+  let ctr= 0
+  for(let x = 0; x<hdgs.length-offset; x+=offset){
+    for(let y = 0; y<hdgs[0].length-offset; y+=offset){
+      convolvedValue = 0
+      gs[x] = []
+      ctr++;
+      let flag = 0
+      console.log(x, y)
+      // for(let xi = x; x<x+offset-1; xi++){
+      //   for(let yi = y; yi<y+offset-1; yi++){
+
+      //     try{
+      //       convolvedValue += hdgs[xi][yi]
+      //     } catch(err) {
+      //       // if(flag == 0){
+      //         // flag = 1
+      //         ctr++;
+      //         console.log(xi, yi);
+      //         // if(ctr>(560*560)+10){
+      //         //   console.log("fubar!!")
+      //         //   return gs
+      //         // }
+      //       // }
+            
+      //     }
+      //   }
+      // }
+      gs[x][y] = convolvedValue/(offset*offset);
+      
+    }
+  }
+  console.log('not fubar')
+  return gs
+}
+
+function getHighDensityGrayScaleArray(){
+  loadPixels();
+  colored = pixels;
+  grayScale = [];
+  for(let x = 0; x<height; x++){
+    grayScale[x] = new Array(width)
+    for(let y = 0; y<width; y++) {
+      var index = (x + y*width)*4;
+      grayScale[x][y] = (pixels[index] + pixels[index+1] + pixels[index+2] + pixels[index+3])/4
+    }
+  }
+  return grayScale;
+}
