@@ -1,28 +1,4 @@
-// import { CanvasDrawable } from "canvas-drawable";
-// const canvas = document.getElementById('canvas');
-// const erase = document.getElementById('erase');
-// const draw = document.getElementById('draw');
-// const getImage = document.getElementById('getimage');
-// const clearAll = document.getElementById('clearall');
-// const drawable = new CanvasDrawable(canvas.getContext('2d'));
-// erase.onclick = e => {
-//   drawable.enerase();
-// }
-// draw.onclick = e => {
-//   drawable.endraw();
-// }
-// getImage.onclick = e => {
-//   console.log(drawable.getCanvasBase64())
-// }
-// clearAll.onclick = e => {
-//   drawable.cleanAll()
-// }
-// import {createCanvas} from './node_modules/p5js';
-
-// const { load } = require("send/node_modules/@types/mime");
-
 let pen;
-
 class Marker {
 
   constructor(_x, _y, _radius, _color) {
@@ -97,21 +73,19 @@ function draw(){
 
 
 
-function predict(){
-  // grayScale = getPooledGrayScaleArray();
-  // console.log('we made it')
-  // console.log(grayScale.length, grayScale[0].length);
+async function predict(){
   console.log('in predict')
-  // let img = createImage(height, width)
-  // img.pixels = pixels;
-  // saveCanvas(myCanvas,'img')
-
+  hdgs = getPooledGrayScaleArray()
   
-  // save(myCanvas, '/home/fletcher/ComputerScience/dev/MNIST_E2E/bare_bones/xyz.png')
-  // setup();
+  tensor_length = 28
+  grayScale = tf.tensor(hdgs);
+  grayScale = grayScale.reshape([1, tensor_length, tensor_length, 1])
+  model = await tf.loadLayersModel('/home/fletcher/ComputerScience/dev/MNIST_E2E/bare_bones/model.json');
+  console.log('loaded model')
+  let output =  await model.predict(grayScale).argMax(1).data(); 
+  console.log(output)
 
-  grayScale = tf.tensor2d(getHighDensityGrayScaleArray());
-  print(grayScale.print())
+  console.log(grayScale.print())
   // console.log(img)
 }
 
@@ -120,39 +94,28 @@ function getPooledGrayScaleArray(){
   console.log('hdgs dims')
   console.log(hdgs.length, hdgs[0].length)
   gs = []
-  offset = 28
+  offset = 10
   let ctr= 0
-  for(let x = 0; x<hdgs.length-offset; x+=offset){
-    for(let y = 0; y<hdgs[0].length-offset; y+=offset){
-      convolvedValue = 0
-      gs[x] = []
-      ctr++;
-      let flag = 0
-      console.log(x, y)
-      // for(let xi = x; x<x+offset-1; xi++){
-      //   for(let yi = y; yi<y+offset-1; yi++){
-
-      //     try{
-      //       convolvedValue += hdgs[xi][yi]
-      //     } catch(err) {
-      //       // if(flag == 0){
-      //         // flag = 1
-      //         ctr++;
-      //         console.log(xi, yi);
-      //         // if(ctr>(560*560)+10){
-      //         //   console.log("fubar!!")
-      //         //   return gs
-      //         // }
-      //       // }
-            
-      //     }
-      //   }
-      // }
-      gs[x][y] = convolvedValue/(offset*offset);
-      
+  stride = offset
+  for(let x = 0; x<hdgs.length; x+=offset){
+    row = []
+    for(let y = 0; y<hdgs.length; y+=offset){
+      if(x>=hdgs.length && y>=hdgs.length){
+        continue;
+      }
+      maxPoolVal = 0;
+      for(let xi = x; xi<x+offset-1; xi += 1){
+        for(let yi = y; yi<y+offset-1; yi += 1){
+          if(x>=hdgs.length && y>=hdgs.length){
+            continue
+          }
+          maxPoolVal = max(maxPoolVal, hdgs[x][y]);
+        }
+      }
+      row.push(maxPoolVal);
     }
+    gs.push(row);
   }
-  console.log('not fubar')
   return gs
 }
 
@@ -169,3 +132,12 @@ function getHighDensityGrayScaleArray(){
   }
   return grayScale;
 }
+
+
+// function makePreprocessingModel(){
+//   let pre_model = tf.sequential()
+//   x = tf.layers.maxPooling2d(poolSize=[10, 10], dataFormat = 'channelsLast')
+//   pre_model.add(x)
+  
+
+// }
