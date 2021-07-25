@@ -1,4 +1,6 @@
 let pen;
+let myCanvas;
+
 class Marker {
 
   constructor(_x, _y, _radius, _color) {
@@ -31,11 +33,9 @@ class Marker {
   }
 }
 
-
-let myCanvas;
 function setup() {
-  let csize = 280
-  pen = new Marker(mouseX, mouseY, 12, 0);
+  let csize = 560
+  pen = new Marker(mouseX, mouseY, 30, 0);
   myCanvas = createCanvas(csize, csize);
   pixelDensity(1);
   myCanvas.parent('canvas');
@@ -49,13 +49,13 @@ function setup() {
 }
 function clearBG() {
   setup()
+  predDiv = document.getElementById('pred')
+  predDiv.innerText =''
 }
-
-
 
 function draw(){
   background(0);
-  stroke(1000);
+  stroke(255);
 
   if(mouseIsPressed){
     fill(0);
@@ -70,52 +70,48 @@ function draw(){
   pen.displayMarkings();
 }
 
-
-
-
 async function predict(){
-  console.log('in predict')
   hdgs = getPooledGrayScaleArray()
-  
+  hdgs = transposeArray(hdgs, 28)
   tensor_length = 28
   grayScale = tf.tensor(hdgs);
   grayScale = grayScale.reshape([1, tensor_length, tensor_length, 1])
-  model = await tf.loadLayersModel('/home/fletcher/ComputerScience/dev/MNIST_E2E/bare_bones/model.json');
-  console.log('loaded model')
-  let output =  await model.predict(grayScale).argMax(1).data(); 
-  console.log(output)
-
-  console.log(grayScale.print())
-  // console.log(img)
+  model = await tf.loadLayersModel('https://raw.githubusercontent.com/Fletchersan/MNIST_E2E/main/tfjs_model/model.json');
+  let output =  await model.predict(grayScale).argMax(1).data();
+  pred = output
+  predDiv = document.getElementById('pred')
+  predDiv.innerText = `The prediction is ${pred}`
 }
 
 function getPooledGrayScaleArray(){
   hdgs = getHighDensityGrayScaleArray();
-  console.log('hdgs dims')
-  console.log(hdgs.length, hdgs[0].length)
-  gs = []
-  offset = 10
+  offset = 20
   let ctr= 0
   stride = offset
-  for(let x = 0; x<hdgs.length; x+=offset){
-    row = []
-    for(let y = 0; y<hdgs.length; y+=offset){
-      if(x>=hdgs.length && y>=hdgs.length){
-        continue;
-      }
-      maxPoolVal = 0;
-      for(let xi = x; xi<x+offset-1; xi += 1){
-        for(let yi = y; yi<y+offset-1; yi += 1){
-          if(x>=hdgs.length && y>=hdgs.length){
-            continue
-          }
-          maxPoolVal = max(maxPoolVal, hdgs[x][y]);
+  gs = []
+
+    for(let x = 0; x<hdgs.length; x+=offset){
+      row = []
+      for(let y = 0; y<hdgs.length; y+=offset){
+        if(x>=hdgs.length && y>=hdgs.length){
+          continue;
         }
+        maxPoolVal = 0;
+        for(let xi = x; xi<x+offset-1; xi += 1){
+          for(let yi = y; yi<y+offset-1; yi += 1){
+            if(x>=hdgs.length && y>=hdgs.length){
+              continue
+            }
+            maxPoolVal = max(maxPoolVal, hdgs[x][y]/255);
+          }
+        }
+        if(maxPoolVal != 1){
+          row.push(0)
+        } else{row.push(1)}
       }
-      row.push(maxPoolVal);
+      gs.push(row);
     }
-    gs.push(row);
-  }
+
   return gs
 }
 
@@ -134,10 +130,17 @@ function getHighDensityGrayScaleArray(){
 }
 
 
-// function makePreprocessingModel(){
-//   let pre_model = tf.sequential()
-//   x = tf.layers.maxPooling2d(poolSize=[10, 10], dataFormat = 'channelsLast')
-//   pre_model.add(x)
-  
+function transposeArray(array, arrayLength){
+  var newArray = [];
+  for(var i = 0; i < array.length; i++){
+      newArray.push([]);
+  };
 
-// }
+  for(var i = 0; i < array.length; i++){
+      for(var j = 0; j < arrayLength; j++){
+          newArray[j].push(array[i][j]);
+      };
+  };
+
+  return newArray;
+}
